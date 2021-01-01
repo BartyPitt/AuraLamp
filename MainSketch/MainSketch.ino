@@ -21,16 +21,16 @@ Ticker SensorTicker;
 
 class Task{
   public:
-    Task(char *Name);
+    Task(int Name);
     bool Reset();
     bool IncreaseTaskTime(unsigned long Time);
     bool FormatReturn(char *ReturnString);
   private:
     uint8_t _CurrentTaskTime;
-    char *_Name;
+    char _Name;
 };
 
-Task::Task(char *Name){
+Task::Task(int Name){
   _Name = Name;
   _CurrentTaskTime = 0;
 }
@@ -45,11 +45,36 @@ bool Task::FormatReturn(char *ReturnString){
   Output.toCharArray(ReturnString , 50);
 }
 
+
+
 class TaskChanger{
-  public
+  //At some point this system needs o bee changed to allow creation and deleating of tasks.
+  //At the moment there are 4 predefined tasks.
+  public:
+    TaskChanger();
+    bool ChangeTask();
+  private:
+    unsigned long _PreviousTaskTime;
+    uint8_t _CurrentTask;
+    Task _TaskList[4] = {(65) ,(66) , (67) , (68)};
+};
+
+TaskChanger::TaskChanger(){
+  //TODO have someway to see the tasks names
+  _PreviousTaskTime = millis();
 
 }
 
+bool TaskChanger::ChangeTask(){
+  unsigned long DT = _PreviousTaskTime - millis(); //ok I am unsure exactly how long a unsigned long variable is so it is the one non uintx_t variable because of this.
+  DT = DT / (60000); //should floor the value. Genreates the time in mineuts.
+  _TaskList[_CurrentTask].IncreaseTaskTime(DT);
+  _PreviousTaskTime = millis();
+  _CurrentTask = (_CurrentTask + 1)%4 
+  TaskChangingPrint(_CurrentTask);
+  TaskChangingPrint(DT);
+  return true;
+}
 
 
 
@@ -73,13 +98,18 @@ void SampleSensors(){
 }
 
 
+TaskChanger TaskTracker;
 
 void setup() {
   Serial.begin(115200);
+
+  for(uint8_t i; i<3 ;i++){
+    pinMode(LedPins[i] , OUTPUT);
+  }
+
   if (!SPIFFS.begin(true)) {
     MainDebugPrint("SPIFFS wont load");
   }
-
   SensorTicker.attach(SamplingFrequency , SampleSensors);
 
   
@@ -90,7 +120,7 @@ bool Latch = true;
 
 void loop() {
   if(digitalRead(ButtonPin)){
-
+    TaskTracker.ChangeTask();
     delay(250);
   }
   

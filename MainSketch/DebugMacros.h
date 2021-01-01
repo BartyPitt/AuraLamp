@@ -1,10 +1,10 @@
-#define GpsData 
+#define TaskChanging 
 #define MainDebug
 
-#ifdef GpsData
-    #define GpsDataPrint(X) Serial.println(X)
+#ifdef TaskChanging
+    #define TaskChangingPrint(X) Serial.println(X)
 #else
-    #define GpsDataPrint(X)
+    #define TaskChangingPrint(X)
 #endif
 
 #ifdef MainDebug
