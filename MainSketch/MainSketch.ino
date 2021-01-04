@@ -19,6 +19,17 @@ Not sure if
 
 Ticker SensorTicker;
 
+
+
+/*
+This is the code for the deevic that looks at the task tracking.
+
+
+
+
+*/
+
+
 class Task{
   public:
     Task(int Name);
@@ -53,9 +64,9 @@ class TaskChanger{
   public:
     TaskChanger();
     bool ChangeTask();
+    uint8_t _CurrentTask;
   private:
     unsigned long _PreviousTaskTime;
-    uint8_t _CurrentTask;
     Task _TaskList[4] = {(65) ,(66) , (67) , (68)};
 };
 
@@ -66,19 +77,36 @@ TaskChanger::TaskChanger(){
 }
 
 bool TaskChanger::ChangeTask(){
-  unsigned long DT = _PreviousTaskTime - millis(); //ok I am unsure exactly how long a unsigned long variable is so it is the one non uintx_t variable because of this.
+  unsigned long DT = millis() - _PreviousTaskTime; //ok I am unsure exactly how long a unsigned long variable is so it is the one non uintx_t variable because of this.
   DT = DT / (60000); //should floor the value. Genreates the time in mineuts.
   _TaskList[_CurrentTask].IncreaseTaskTime(DT);
   _PreviousTaskTime = millis();
-  _CurrentTask = (_CurrentTask + 1)%4 
+  digitalWrite(LedPins[_CurrentTask], LOW);
+  _CurrentTask = (_CurrentTask + 1)%4 ;
+  digitalWrite(_CurrentTask , HIGH);
   TaskChangingPrint(_CurrentTask);
   TaskChangingPrint(DT);
   return true;
 }
 
+TaskChanger TaskTracker;
 
+/* The part of the code for the sensor reading and data logging
+
+
+*/
+
+bool ReadFromLog(String Location){
+  File file = SPIFFS.open(Location);
+  while(file.available()){
+ 
+      Serial.write(file.read());
+  }
+  file.close();
+}
 
 bool WriteToLog(String Location , String Text){
+  //Would be more efficient wih char arrays.
   File log =  SPIFFS.open(Location , FILE_APPEND);
   if(log.print(Text)){
       MainDebugPrint("Written to the file");
@@ -93,17 +121,17 @@ bool WriteToLog(String Location , String Text){
 void SampleSensors(){
   uint32_t LDR = analogRead(LDRPin);
   uint32_t Temp = analogRead(ThermistorPin);
-  String Bigstring = String("!" + String(LDR,HEX) + "," + String(Temp,HEX) + "!" );
+  String Bigstring = String("!" + String(LDR,HEX) + "," + String(Temp,HEX) + "," + String(TaskTracker._CurrentTask , DEC) + "!" );
+  TickerPrint(Bigstring);
   WriteToLog(DataLog , Bigstring);
 }
-
-
-TaskChanger TaskTracker;
 
 void setup() {
   Serial.begin(115200);
 
-  for(uint8_t i; i<3 ;i++){
+
+  pinMode(ButtonPin,INPUT);
+  for(uint8_t i; i<4 ;i++){
     pinMode(LedPins[i] , OUTPUT);
   }
 
@@ -120,8 +148,9 @@ bool Latch = true;
 
 void loop() {
   if(digitalRead(ButtonPin)){
+    TaskChangingPrint("Button Pressed");
     TaskTracker.ChangeTask();
-    delay(250);
+    delay(1000);
   }
   
   // put your main code here, to run repeatedly:
