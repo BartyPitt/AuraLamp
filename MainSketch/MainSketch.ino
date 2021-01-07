@@ -18,9 +18,10 @@ Not sure if
 #include "Config.h"
 #include <WiFi.h>
 #include <ESPAsyncWebServer.h>
-#include "Password.h"
+#include "Passwords.h"
 
 Ticker SensorTicker;
+AsyncWebServer server(80);
 
 
 
@@ -43,6 +44,64 @@ class Task{
     uint8_t _CurrentTaskTime;
     char _Name;
 };
+TaskChanger TaskTracker;
+
+bool ReadFromLog(String Location);
+bool WriteToLog(String Location , String Text);
+void SampleSensors();
+
+
+
+
+void setup() {
+  Serial.begin(115200);
+
+  pinMode(ButtonPin,INPUT);
+
+  for(uint8_t i; i<4 ;i++){
+    pinMode(LedPins[i] , OUTPUT);
+  }
+
+  if (!SPIFFS.begin(true)) {
+    MainDebugPrint("SPIFFS wont load");
+  }
+
+  WiFi.begin(SSID, Password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(1000);
+    Serial.println("Connecting to WiFi..");
+  }
+  Serial.println(WiFi.localIP());
+
+  ReadFromLog(DataLog);
+  SensorTicker.attach(SamplingFrequency , SampleSensors);
+
+  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
+    request->send(200, "text/plain", "It is good to be alive , Lets see how long that lasts");
+  });
+
+  server.on("/DataLog", HTTP_GET, [](AsyncWebServerRequest *request){
+    request->send(SPIFFS, "/log/LDRandTemp.log", String(), false);
+  });
+
+  server.begin();
+  
+}
+
+bool Latch = true;
+
+
+void loop() {
+  if(digitalRead(ButtonPin)){
+    TaskChangingPrint("Button Pressed");
+    TaskTracker.ChangeTask();
+    delay(1000);
+  }
+  
+  // put your main code here, to run repeatedly:
+
+}
+
 
 Task::Task(int Name){
   _Name = Name;
@@ -92,7 +151,6 @@ bool TaskChanger::ChangeTask(){
   return true;
 }
 
-TaskChanger TaskTracker;
 
 /* The part of the code for the sensor reading and data logging
 
@@ -127,35 +185,4 @@ void SampleSensors(){
   String Bigstring = String("!" + String(LDR,HEX) + "," + String(Temp,HEX) + "," + String(TaskTracker._CurrentTask , DEC) + "!" );
   TickerPrint(Bigstring);
   WriteToLog(DataLog , Bigstring);
-}
-
-void setup() {
-  Serial.begin(115200);
-
-
-  pinMode(ButtonPin,INPUT);
-  for(uint8_t i; i<4 ;i++){
-    pinMode(LedPins[i] , OUTPUT);
-  }
-
-  if (!SPIFFS.begin(true)) {
-    MainDebugPrint("SPIFFS wont load");
-  }
-  ReadFromLog(DataLog);
-  SensorTicker.attach(SamplingFrequency , SampleSensors);
-  
-}
-
-bool Latch = true;
-
-
-void loop() {
-  if(digitalRead(ButtonPin)){
-    TaskChangingPrint("Button Pressed");
-    TaskTracker.ChangeTask();
-    delay(1000);
-  }
-  
-  // put your main code here, to run repeatedly:
-
 }
