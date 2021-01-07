@@ -12,7 +12,7 @@ Not sure if
 #include <SPIFFS.h>
 #include <WiFi.h>
 #include <ESPAsyncWebServer.h>
-#include "Password.h"
+#include "Passwords.h"
 
 AsyncWebServer server(80);
 
@@ -32,7 +32,7 @@ void setup() {
 
   
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send(200, "text/plain", "It is good to be alive");
+    request->send(200, "text/plain", "It is good to be alive , Lets see how long that lasts");
   });
 
   server.on("/DataLog", HTTP_GET, [](AsyncWebServerRequest *request){

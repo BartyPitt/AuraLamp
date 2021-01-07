@@ -16,6 +16,9 @@ Not sure if
 //#include "../Passwords.h"
 #include "DebugMacros.h"
 #include "Config.h"
+#include <WiFi.h>
+#include <ESPAsyncWebServer.h>
+#include "Password.h"
 
 Ticker SensorTicker;
 
