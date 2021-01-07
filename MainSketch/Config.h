@@ -1,4 +1,4 @@
-const float SamplingFrequency = 600 ; //approximately 10 mineuts.
+const float SamplingFrequency = 200 ; //approximately 10 mineuts.
 
 
 const int LedPins[4] = {12,13,14,27};

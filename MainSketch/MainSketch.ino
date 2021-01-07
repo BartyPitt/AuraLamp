@@ -138,8 +138,8 @@ void setup() {
   if (!SPIFFS.begin(true)) {
     MainDebugPrint("SPIFFS wont load");
   }
+  ReadFromLog(DataLog);
   SensorTicker.attach(SamplingFrequency , SampleSensors);
-
   
 }
 
