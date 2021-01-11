@@ -5,6 +5,7 @@ from matplotlib.backends.backend_tkagg import (
 # Implement the default Matplotlib key bindings.
 from matplotlib.backend_bases import key_press_handler
 from matplotlib.figure import Figure
+from GraphPlotters import GenExample
 import numpy as np
 
 
@@ -14,7 +15,8 @@ ExampleTestData = [3,4,5,6]
 ExampleTargets = [10,10,20,20]
 ExampleDataForTemp = []
 
-LARGE_FONT= ("Verdana", 12)
+LARGE_FONT= ("Verdana", 24)
+SMALL_FONT= ("Verdana", 12)
 
 class MainWindow(tk.Tk):
     def __init__(self ,*args , **kwargs):
@@ -51,23 +53,25 @@ class MainWindow(tk.Tk):
         RightSubframe.grid(row = 0 , column = 1)
         LeftSubframe.grid(row = 0 , column = 0)
         BottomSubFrame.grid(row = 1 ,columnspan=2 )
-
-        self.GenerateProgressBars(RightSubframe , "green",0)
-        self.GenerateProgressBars(RightSubframe, "yellow",1)
-        self.GenerateProgressBars(RightSubframe, "red",2)
-        self.GenerateProgressBars(RightSubframe, "blue",3)
-
+        self.GenerateProgressBars2(RightSubframe)
 
         self.PlotPieChart(LeftSubframe,ExampleTestData)
+        self.GenerateBottomGraphs(BottomSubFrame)
         return MainFrame
 
-    def GenerateScreenTwo(self , frame):
-        fig = Figure(figsize=(5, 4), dpi=100)
-        plot =fig.add_subplot(111)
-        plot.plot(ExampleTestData)
-        plot =fig.add_subplot(111)
+    def GenerateProgressBars2(frame):
+        self.GenerateProgressBars(frame , "green",0)
+        self.GenerateProgressBars(frame, "yellow",1)
+        self.GenerateProgressBars(frame, "red",2)
+        self.GenerateProgressBars(frame, "blue",3)
 
 
+
+    def GenerateBottomGraphs(self , frame):
+        Title = ttk.Label(frame, text='Today , Temperature and Tasks worked on ' , font = LARGE_FONT)
+        Title.pack()
+        fig = Figure(figsize=(10, 2), dpi=100)
+        GenExample(fig)
         canvas = FigureCanvasTkAgg(fig, master=frame)  # A tk.DrawingArea.
         canvas.draw()
         canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
@@ -77,10 +81,14 @@ class MainWindow(tk.Tk):
         return None
 
     def GenerateSecondGraph(self,frame):
-        
+        return None
+
 
 
     def PlotPieChart(self,frame,Data):
+        Title = ttk.Label(frame, text='Weekly Task Distribution' , font = LARGE_FONT)
+        Title.pack()
+
         fig = Figure(figsize=(5, 4), dpi=100)
         plot =fig.add_subplot(111)
         plot.pie(ExampleTestData)
