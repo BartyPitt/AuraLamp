@@ -59,7 +59,8 @@ class MainWindow(tk.Tk):
         self.GenerateBottomGraphs(BottomSubFrame)
         return MainFrame
 
-    def GenerateProgressBars2(frame):
+    def GenerateProgressBars2(self,frame):
+
         self.GenerateProgressBars(frame , "green",0)
         self.GenerateProgressBars(frame, "yellow",1)
         self.GenerateProgressBars(frame, "red",2)
@@ -103,7 +104,9 @@ class MainWindow(tk.Tk):
         colourName = colour + ".Horizontal.TProgressbar"
         s.theme_use('clam')
         s.configure(colourName, foreground=colour, background=colour)
-        ttk.Progressbar(frame, style=colourName, orient="horizontal", length=600, mode="determinate", maximum=4, value=1).grid(row = number, pady = 10)
+        Label1 = ttk.Label(frame, text='Task' + str(number) , font = SMALL_FONT)
+        Label1.grid(row = 2 * number)
+        ttk.Progressbar(frame, style=colourName, orient="horizontal", length=600, mode="determinate", maximum=4, value=1).grid(row = 2*number + 1, pady = 10)
 
 
 
