@@ -4,14 +4,14 @@ Ip = "198.168.1.5"
 Port = "80"
 
 def GetCurrentTask():
-    r = requests.get(UriCreator(Task))
+    r = requests.get(UriCreator("log/Data"))
     if r.status_code != 200:
         return False
     else:
         return int(r.content)
 
 def ClearInfo(Uri):
-    r = requests.delete(UriCreator(Task))
+    r = requests.delete(UriCreator("Task"))
     if r.status_code != 200:
         return False
     else:
@@ -24,7 +24,7 @@ def ParserForHex(data):
     data = data[:-1] #removes the fun comma.
     a = []
     extraCheaky = "a = [" + str(data) + "]" #this is illegally cheaky do not copy this line.
-    extraCheaky.eval() #as the file is very similar to a python list , it treats it as a python list
+    eval(extraCheaky) #as the file is very similar to a python list , it treats it as a python list
     #this is also a massive security risk , but it is so much fun that I have left it in.
     Temprature , Light , Task  = [] ,[] , []
     for Row in a:
@@ -45,8 +45,9 @@ def TrueTempCalc(Input):
     R0 = 10000
     MainResistance = ((Input/4096) * TheOtherResistance) /((Input/4096) - 1)
     Output = (Temprature0*Beta) / (Temprature0 * log(MainResistance/R0) + Beta)
+    Output -= AbsoluteZero
     return Output
 
 
 def UriCreator(Uri):
-    return Ip + ":" + Port + "/" Uri
+    return Ip + ":" + Port + "/" + Uri
