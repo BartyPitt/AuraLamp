@@ -1,5 +1,5 @@
 import tkinter as tk
-import ApiInteractions as api
+import ApiInteractions as Api
 from tkinter import ttk
 from matplotlib.backends.backend_tkagg import (
     FigureCanvasTkAgg, NavigationToolbar2Tk)
@@ -40,6 +40,7 @@ class MainWindow(tk.Tk):
             MainFrame = self.Screens[0]
             MainFrame.grid(row=0, column=0, sticky="nsew")
             self.GenerateScreenOne(MainFrame)
+            self.UpdateConection()
 
 
 
@@ -71,6 +72,8 @@ class MainWindow(tk.Tk):
         return MainFrame
 
     def GenerateProgressBars2(self,frame):
+        self.tasklabel = tk.Label(master = frame ,text = "Current Task = 0" , font = LARGE_FONT)
+        self.tasklabel.grid(row = 0)
         self.GenerateProgressBars(frame , "green",0)
         self.GenerateProgressBars(frame, "orange",1)
         self.GenerateProgressBars(frame, "red",2)
@@ -116,9 +119,9 @@ class MainWindow(tk.Tk):
         s.theme_use('clam')
         s.configure(colourName, foreground=colour, background=colour)
         Label1 = ttk.Label(frame, text='Task' + str(number) , font = SMALL_FONT)
-        Label1.grid(row = 2 * number)
+        Label1.grid(row = 2 * number + 1)
         Bar = ttk.Progressbar(frame, style=colourName, orient="horizontal", length=400, mode="determinate", maximum=self.TargetBarValues[number], value=15)
-        Bar.grid(row = 2*number + 1, pady = 10)
+        Bar.grid(row = 2*number + 2, pady = 10)
         self.BarsList.append(Bar)
 
         ent = tk.Entry(frame)
@@ -126,7 +129,18 @@ class MainWindow(tk.Tk):
         ent.insert(0 , "40")
         self.BarEntries.append(ent)
 
-    def UpdateConection
+    def UpdateConection(self):
+        Responce = Api.GetCurrentTask()
+        if Responce:
+            self.tasklabel["text"] = Responce
+            self.Status["text"] = "Connected"
+            self.Status.configure(fg ="green")
+        else:
+            self.Status["text"] = "Disconnected"
+            self.Status.configure(fg ="red")
+
+        self.after(5000 , self.UpdateConection)
+        return
         
 
 

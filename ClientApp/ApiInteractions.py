@@ -1,14 +1,19 @@
 import requests
 from math import log
-Ip = "198.168.1.5"
+from requests.exceptions import Timeout
+Ip = "http://192.168.1.214"
 Port = "80"
 
 def GetCurrentTask():
-    r = requests.get(UriCreator("log/Data"))
-    if r.status_code != 200:
+    try:
+        r = requests.get(UriCreator("CT"),timeout = 1)
+        if r.status_code != 200:
+            return False
+        else:
+            return r.content
+
+    except Timeout:
         return False
-    else:
-        return int(r.content)
 
 def ClearInfo(Uri):
     r = requests.delete(UriCreator("Task"))
@@ -50,4 +55,9 @@ def TrueTempCalc(Input):
 
 
 def UriCreator(Uri):
-    return Ip + ":" + Port + "/" + Uri
+    temp =  Ip  + "/" + Uri
+    print(temp)
+    return temp
+
+if __name__ == "__main__":
+    print(GetCurrentTask())   
