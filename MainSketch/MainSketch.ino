@@ -124,7 +124,7 @@ bool WriteToLog(String Location , String Text){
 void SampleSensors(){
   uint32_t LDR = analogRead(LDRPin);
   uint32_t Temp = analogRead(ThermistorPin);
-  String Bigstring = String("!" + String(LDR,HEX) + "," + String(Temp,HEX) + "," + String(TaskTracker._CurrentTask , DEC) + "!" );
+  String Bigstring = String("[" + String(LDR,HEX) + "," + String(Temp,HEX) + "," + String(TaskTracker._CurrentTask , DEC) + "]" );
   TickerPrint(Bigstring);
   WriteToLog(DataLog , Bigstring);
 }
@@ -159,6 +159,12 @@ void setup() {
   server.on("/DataLog", HTTP_GET, [](AsyncWebServerRequest *request){
     request->send(SPIFFS, "/log/LDRandTemp.log", String(), false);
   });
+
+  server.on("/CT" , HTTP_GET, [](AsyncWebServerRequest *request){
+    uint8_t a = TaskTracker._CurrentTask;
+    String ReturnString = String(a);
+    request->send(200, "text/plain",ReturnString);
+  }); 
 
   server.begin();
   

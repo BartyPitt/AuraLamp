@@ -74,10 +74,10 @@ class MainWindow(tk.Tk):
     def GenerateProgressBars2(self,frame):
         self.tasklabel = tk.Label(master = frame ,text = "Current Task = 0" , font = LARGE_FONT)
         self.tasklabel.grid(row = 0)
-        self.GenerateProgressBars(frame , "green",0)
+        self.GenerateProgressBars(frame , "blue",0)
         self.GenerateProgressBars(frame, "orange",1)
-        self.GenerateProgressBars(frame, "red",2)
-        self.GenerateProgressBars(frame, "blue",3)
+        self.GenerateProgressBars(frame, "green",2)
+        self.GenerateProgressBars(frame, "red",3)
         tk.Button(frame , text = "Update",command = self.UpdateProgressBars).grid(row = 10)
 
 
@@ -125,14 +125,14 @@ class MainWindow(tk.Tk):
         self.BarsList.append(Bar)
 
         ent = tk.Entry(frame)
-        ent.grid(row = 2*number + 1 , column = 1)
+        ent.grid(row = 2*number + 2 , column = 1)
         ent.insert(0 , "40")
         self.BarEntries.append(ent)
 
     def UpdateConection(self):
         Responce = Api.GetCurrentTask()
         if Responce:
-            self.tasklabel["text"] = Responce
+            self.tasklabel["text"] = "Current Task = " + str(Responce)[2]
             self.Status["text"] = "Connected"
             self.Status.configure(fg ="green")
         else:
@@ -148,6 +148,7 @@ class MainWindow(tk.Tk):
         print(self.BarEntries)
         for i,Bar in enumerate(self.BarsList):
             Bar["maximum"] = int(self.BarEntries[i].get())
+            Bar["value"] = int(ExampleTestData[i])
 
 
 app = MainWindow()
