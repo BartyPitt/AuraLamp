@@ -5,7 +5,6 @@ Designed to record the daily activity along with the temprature and light level.
 The code is writen for ESP32 and tested on esp32 Wroom. with 4mb of Flash.
 Should work with many other boards although this is not guaranteed.
 Not sure if 
-
 */
 
 #include <Arduino.h>
@@ -14,20 +13,21 @@ Not sure if
 //Extra headers files that I made to help myself.
 //Passwords.h Should not exist for someone else.......
 #include "DebugMacros.h"
-#include "Config.h"
+//#include "Config.h"
 #include <WiFi.h>
+#include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
 #include "Passwords.h"
+#include "Config.h"
 
 Ticker SensorTicker;
 AsyncWebServer server(80);
 
-
-
 /*
 This is the code for the deevic that looks at the task tracking.
 
-
+Turns out that it is very easy to store byte data in the spiffs file system. 
+Ehh I will know this for next time.
 
 
 */
@@ -35,28 +35,44 @@ This is the code for the deevic that looks at the task tracking.
 
 class Task{
   public:
-    Task(int Name);
-    bool Reset();
-    bool IncreaseTaskTime(unsigned long Time);
-    bool FormatReturn(char *ReturnString);
+    Task(int ID);
+    void UpdateTime();
+    void UpdateTime(uint8_t Up);
+    void ClearData();
+    uint32_t RecallTime();
+
   private:
-    uint8_t _CurrentTaskTime;
-    char _Name;
+    String _FileLocation;
 };
 
-Task::Task(int Name){
-  _Name = Name;
-  _CurrentTaskTime = 0;
+Task::Task(int ID){
+  _FileLocation = String( StorageLocation +  String(ID) + "CurrentTime.Log");
 }
 
-bool Task::IncreaseTaskTime(unsigned long Time){
-  _CurrentTaskTime = _CurrentTaskTime + Time;
-  return true;
+void Task::UpdateTime(uint8_t Up){
+
+  uint32_t CurrentTime = Up + RecallTime();
+
+  File WriteFile = SPIFFS.open(_FileLocation , FILE_WRITE);
+  WriteFile.print(String(CurrentTime));
+  WriteFile.close();
 }
 
-bool Task::FormatReturn(char *ReturnString){
-  String Output = String(String(_Name) +"," + String(_CurrentTaskTime , HEX) );
-  Output.toCharArray(ReturnString , 50);
+void Task::UpdateTime(){
+  UpdateTime(1);
+}
+
+uint32_t Task::RecallTime(){
+  File ReadFile = SPIFFS.open(_FileLocation , FILE_READ);
+  String ReadData = ReadFile.readString();
+  uint64_t CurrentTime = ReadData.toInt();
+  ReadFile.close();
+  return CurrentTime;
+}
+
+
+void Task::ClearData(){
+  SPIFFS.remove(_FileLocation);
 }
 
 
@@ -68,28 +84,27 @@ class TaskChanger{
     TaskChanger();
     bool ChangeTask();
     uint8_t _CurrentTask;
+    void UpdateLog();
   private:
-    unsigned long _PreviousTaskTime;
-    Task _TaskList[4] = {(65) ,(66) , (67) , (68)};
+    Task _TaskList[4] = {(0) ,(1) , (2) , (3)};
 };
 
 TaskChanger::TaskChanger(){
   //TODO have someway to see the tasks names
-  _PreviousTaskTime = millis();
 
 }
 
 bool TaskChanger::ChangeTask(){
-  unsigned long DT = millis() - _PreviousTaskTime; //ok I am unsure exactly how long a unsigned long variable is so it is the one non uintx_t variable because of this.
-  DT = DT / (60000); //should floor the value. Genreates the time in mineuts.
-  _TaskList[_CurrentTask].IncreaseTaskTime(DT);
-  _PreviousTaskTime = millis();
   digitalWrite(LedPins[_CurrentTask], LOW);
+  
   _CurrentTask = (_CurrentTask + 1)%4 ;
-  digitalWrite(_CurrentTask , HIGH);
+  digitalWrite(LedPins[_CurrentTask] , HIGH);
   TaskChangingPrint(_CurrentTask);
-  TaskChangingPrint(DT);
   return true;
+}
+
+void TaskChanger::UpdateLog(){
+  _TaskList[_CurrentTask].UpdateTime();
 }
 
 TaskChanger TaskTracker;
@@ -98,6 +113,11 @@ TaskChanger TaskTracker;
 
 
 */
+
+void StoreData(){
+  TaskTracker.UpdateLog();
+}
+
 
 bool ReadFromLog(String Location){
   File file = SPIFFS.open(Location);
@@ -108,26 +128,8 @@ bool ReadFromLog(String Location){
   file.close();
 }
 
-bool WriteToLog(String Location , String Text){
-  //Would be more efficient wih char arrays.
-  File log =  SPIFFS.open(Location , FILE_APPEND);
-  if(log.print(Text)){
-      MainDebugPrint("Written to the file");
-    }
-  else{
-    MainDebugPrint("SPIFFS broken when doing sensor readings");
-  }
-}
 
 
-
-void SampleSensors(){
-  uint32_t LDR = analogRead(LDRPin);
-  uint32_t Temp = analogRead(ThermistorPin);
-  String Bigstring = String("[" + String(LDR,HEX) + "," + String(Temp,HEX) + "," + String(TaskTracker._CurrentTask , DEC) + "]" );
-  TickerPrint(Bigstring);
-  WriteToLog(DataLog , Bigstring);
-}
 
 void setup() {
   Serial.begin(115200);
@@ -141,30 +143,15 @@ void setup() {
   if (!SPIFFS.begin(true)) {
     MainDebugPrint("SPIFFS wont load");
   }
+  WiFi.softAP(SSID, Password);
+  Serial.println(WiFi.softAPIP());
 
-  WiFi.begin(SSID, Password);
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(1000);
-    Serial.println("Connecting to WiFi..");
-  }
-  Serial.println(WiFi.localIP());
 
-  ReadFromLog(DataLog);
-  SensorTicker.attach(SamplingFrequency , SampleSensors);
+  SensorTicker.attach(SamplingFrequency , StoreData);
 
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
     request->send(200, "text/plain", "It is good to be alive , Lets see how long that lasts");
   });
-
-  server.on("/DataLog", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send(SPIFFS, "/log/LDRandTemp.log", String(), false);
-  });
-
-  server.on("/CT" , HTTP_GET, [](AsyncWebServerRequest *request){
-    uint8_t a = TaskTracker._CurrentTask;
-    String ReturnString = String(a);
-    request->send(200, "text/plain",ReturnString);
-  }); 
 
   server.begin();
   
