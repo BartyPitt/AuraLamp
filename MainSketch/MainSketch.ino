@@ -32,79 +32,99 @@ Ehh I will know this for next time.
 
 */
 
+class Task
+{
+public:
+  Task(int ID);
+  void UpdateTime();
+  void UpdateTime(uint8_t Up);
+  void ClearData();
+  uint32_t RecallTime();
 
-class Task{
-  public:
-    Task(int ID);
-    void UpdateTime();
-    void UpdateTime(uint8_t Up);
-    void ClearData();
-    uint32_t RecallTime();
-
-  private:
-    String _FileLocation;
+private:
+  String _FileLocation;
 };
 
-Task::Task(int ID){
-  _FileLocation = String( StorageLocation +  String(ID) + "CurrentTime.Log");
+Task::Task(int ID)
+{
+  _FileLocation = String(StorageLocation + String(ID) + "CurrentTime.Log");
 }
 
-void Task::UpdateTime(uint8_t Up){
+void Task::UpdateTime(uint8_t Up)
+{
 
   uint32_t CurrentTime = Up + RecallTime();
 
-  File WriteFile = SPIFFS.open(_FileLocation , FILE_WRITE);
+  File WriteFile = SPIFFS.open(_FileLocation, FILE_WRITE);
   WriteFile.print(String(CurrentTime));
   WriteFile.close();
 }
 
-void Task::UpdateTime(){
+void Task::UpdateTime()
+{
   UpdateTime(1);
 }
 
-uint32_t Task::RecallTime(){
-  File ReadFile = SPIFFS.open(_FileLocation , FILE_READ);
+uint32_t Task::RecallTime()
+{
+  File ReadFile = SPIFFS.open(_FileLocation, FILE_READ);
   String ReadData = ReadFile.readString();
   uint64_t CurrentTime = ReadData.toInt();
   ReadFile.close();
   return CurrentTime;
 }
 
-
-void Task::ClearData(){
+void Task::ClearData()
+{
   SPIFFS.remove(_FileLocation);
 }
 
-
-
-class TaskChanger{
+class TaskChanger
+{
   //At some point this system needs o bee changed to allow creation and deleating of tasks.
   //At the moment there are 4 predefined tasks.
-  public:
-    TaskChanger();
-    bool ChangeTask();
-    uint8_t _CurrentTask;
-    void UpdateLog();
-  private:
-    Task _TaskList[4] = {(0) ,(1) , (2) , (3)};
+public:
+  TaskChanger();
+  bool ChangeTask();
+  uint8_t _CurrentTask;
+  void UpdateLog();
+  String CreateReturnString();
+
+private:
+  Task _TaskList[4] = {(0), (1), (2), (3)};
 };
 
-TaskChanger::TaskChanger(){
+TaskChanger::TaskChanger()
+{
   //TODO have someway to see the tasks names
-
 }
 
-bool TaskChanger::ChangeTask(){
+bool TaskChanger::ChangeTask()
+{
   digitalWrite(LedPins[_CurrentTask], LOW);
-  
-  _CurrentTask = (_CurrentTask + 1)%4 ;
-  digitalWrite(LedPins[_CurrentTask] , HIGH);
+
+  _CurrentTask = (_CurrentTask + 1) % 4;
+  digitalWrite(LedPins[_CurrentTask], HIGH);
   TaskChangingPrint(_CurrentTask);
   return true;
 }
 
-void TaskChanger::UpdateLog(){
+void TaskChanger::UpdateLog()
+{
   _TaskList[_CurrentTask].UpdateTime();
+}
+
+String TaskChanger::CreateReturnString()
+{
+  String BigString = "<html> <body>";
+  uint32_t temp;
+  for (uint8_t i; i < 4; i++)
+  {
+    temp = _TaskList[i].RecallTime();
+    BigString = String(BigString + " Task" + String(i) + (" ") + String(temp) + " <br>");
+  }
+  BigString = BigString + "</body> , </html>";
+  return BigString;
 }
 
 TaskChanger TaskTracker;
@@ -114,59 +134,60 @@ TaskChanger TaskTracker;
 
 */
 
-void StoreData(){
+void StoreData()
+{
   TaskTracker.UpdateLog();
 }
 
-
-bool ReadFromLog(String Location){
+bool ReadFromLog(String Location)
+{
   File file = SPIFFS.open(Location);
-  while(file.available()){
- 
-      Serial.write(file.read());
+  while (file.available())
+  {
+
+    Serial.write(file.read());
   }
   file.close();
 }
 
-
-
-
-void setup() {
+void setup()
+{
   Serial.begin(115200);
 
-  pinMode(ButtonPin,INPUT);
+  pinMode(ButtonPin, INPUT);
 
-  for(uint8_t i; i<4 ;i++){
-    pinMode(LedPins[i] , OUTPUT);
+  for (uint8_t i; i < 4; i++)
+  {
+    pinMode(LedPins[i], OUTPUT);
   }
 
-  if (!SPIFFS.begin(true)) {
+  if (!SPIFFS.begin(true))
+  {
     MainDebugPrint("SPIFFS wont load");
   }
   WiFi.softAP(SSID, Password);
   Serial.println(WiFi.softAPIP());
 
+  SensorTicker.attach(SamplingFrequency, StoreData);
 
-  SensorTicker.attach(SamplingFrequency , StoreData);
-
-  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send(200, "text/plain", "It is good to be alive , Lets see how long that lasts");
+  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
+    String StringyBoi = TaskTracker.CreateReturnString();
+    request->send(200, "text/plain", StringyBoi);
   });
 
   server.begin();
-  
 }
 
 bool Latch = true;
 
-
-void loop() {
-  if(digitalRead(ButtonPin)){
+void loop()
+{
+  if (digitalRead(ButtonPin))
+  {
     TaskChangingPrint("Button Pressed");
     TaskTracker.ChangeTask();
     delay(1000);
   }
-  
-  // put your main code here, to run repeatedly:
 
+  // put your main code here, to run repeatedly:
 }
