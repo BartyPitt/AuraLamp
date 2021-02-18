@@ -4,7 +4,7 @@ in December 2020.
 Designed to record the daily activity along with the temprature and light level.
 The code is writen for ESP32 and tested on esp32 Wroom. with 4mb of Flash.
 Should work with many other boards although this is not guaranteed.
-Not sure if 
+So should change to *responce by defult.
 */
 
 #include <Arduino.h>
@@ -88,7 +88,7 @@ public:
   bool ChangeTask();
   uint8_t _CurrentTask;
   void UpdateLog();
-  String CreateReturnString();
+  void CreateReturnString(String *ReturnString,AsyncWebServerRequest *request);
 
 private:
   Task _TaskList[4] = {(0), (1), (2), (3)};
@@ -114,17 +114,20 @@ void TaskChanger::UpdateLog()
   _TaskList[_CurrentTask].UpdateTime();
 }
 
-String TaskChanger::CreateReturnString()
+void TaskChanger::CreateReturnString(String *ReturnString , AsyncWebServerRequest *request)
 {
-  String BigString = "<html> <body>";
+  Serial.println("Arrived in carnage");
+  String BigString = *ReturnString;
+  BigString = "<html> <body>";
   uint32_t temp;
-  for (uint8_t i; i < 4; i++)
+  for (uint8_t i = 0; i < 4; i++)
   {
     temp = _TaskList[i].RecallTime();
     BigString = String(BigString + " Task" + String(i) + (" ") + String(temp) + " <br>");
   }
   BigString = BigString + "</body> , </html>";
-  return BigString;
+  request->send(200, "text/html", BigString);
+  return;
 }
 
 TaskChanger TaskTracker;
@@ -136,6 +139,7 @@ TaskChanger TaskTracker;
 
 void StoreData()
 {
+  Serial.println("Updating log");
   TaskTracker.UpdateLog();
 }
 
@@ -153,13 +157,18 @@ bool ReadFromLog(String Location)
 void setup()
 {
   Serial.begin(115200);
+  Serial.println("working");
 
   pinMode(ButtonPin, INPUT);
 
-  for (uint8_t i; i < 4; i++)
+  for (uint8_t i = 0; i < 4; i++)
   {
     pinMode(LedPins[i], OUTPUT);
+    digitalWrite(LedPins[i] , HIGH);
+    delay(1000);
+    digitalWrite(LedPins[i] , LOW);
   }
+
 
   if (!SPIFFS.begin(true))
   {
@@ -171,10 +180,10 @@ void setup()
   SensorTicker.attach(SamplingFrequency, StoreData);
 
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
-    String StringyBoi = TaskTracker.CreateReturnString();
-    request->send(200, "text/plain", StringyBoi);
+    String StringyBoi; 
+    TaskTracker.CreateReturnString(&StringyBoi , request);
+    Serial.println("Welpio");
   });
-
   server.begin();
 }
 
